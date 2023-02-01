@@ -2,11 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
-# TODO: output methods 1 and 2 into separate files with the org name
-# TODO: take query list from csv file or something
+# TODO: clean up
 
 # TODO: complete blacklist
-# list of websites that the scraper seems to have trouble with but emails very likely won't be there
+# List of websites that the scraper seems to have trouble with but emails very likely won't be there
 blacklist = ["tripadvisor.com"]
 
 def getEmail(query):
@@ -73,19 +72,37 @@ input.close()
 # Get the search queries
 queries = data.splitlines()
 
-# Set up the CSV string
-csvString = ""
-
 # Get emails for each search query
+orgEmailsDict = {}
+maxEmails = 0
 for query in queries:
     emails = getEmail(query)
-    csvString += query
-    for email in emails:
+    orgEmailsDict[query] = emails
+    if len(emails) > maxEmails:
+        maxEmails = len(emails)
+
+# Set up the CSV string header
+csvString = "ORG"
+for i in range(1, maxEmails+1):
+    csvString += ",EMAIL" + str(i)
+csvString += "\n"
+
+# Add each query and email to the CSV string
+for org, orgEmails in orgEmailsDict.items():
+    csvString += org # TODO: remove ',' in org
+    i = 0
+    for email in orgEmails:
         csvString += "," + email
+        i += 1
+    # Add empty cells to conform to CSV format
+    for j in range(0, maxEmails - i):
+        csvString += ", "
     csvString += "\n"
 
-print(csvString)
-
+# Write output to file
+output = open("output.csv", "w")
+output.writelines(csvString)
+output.close()
 
 
 
