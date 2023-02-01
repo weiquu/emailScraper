@@ -3,10 +3,31 @@ from bs4 import BeautifulSoup
 import re
 
 # TODO: clean up
+# TODO: progress bar
 
 # TODO: complete blacklist
 # List of websites that the scraper seems to have trouble with but emails very likely won't be there
 blacklist = ["tripadvisor.com"]
+
+def extractEmailAddresses(url, emailsSet):
+    response = requests.get(url)
+    html_content = response.text
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Method 1: commented out for now as method 2 gets all its results + more accurate
+    # emails = re.findall(email_pattern, soup.text)
+    # for email in emails:
+    #     print(email)
+
+    # Method 2
+    mailtos = soup.select('a[href]')
+    for i in mailtos:
+        href = i['href']
+        if "mailto:" in href:
+            #print(href[7:])
+            emailsSet.add(href[7:])
+    
+    return emailsSet
 
 def getEmail(query):
     emailsSet = set()
@@ -36,22 +57,12 @@ def getEmail(query):
 
     # Loop over the URLs and extract any email addresses
     for url in urls:
-        response = requests.get(url)
-        html_content = response.text
-        soup = BeautifulSoup(html_content, "html.parser")
-
-        # Method 1: commented out for now as method 2 gets all its results + more accurate
-        # emails = re.findall(email_pattern, soup.text)
-        # for email in emails:
-        #     print(email)
-
-        # Method 2
-        mailtos = soup.select('a[href]')
-        for i in mailtos:
-            href = i['href']
-            if "mailto:" in href:
-                #print(href[7:])
-                emailsSet.add(href[7:])
+        try:
+            emailsSet = extractEmailAddresses(url, emailsSet)
+        except:
+            print("Following URL is a problem:")
+            print(url)
+        
 
     return emailsSet
         
@@ -73,13 +84,17 @@ input.close()
 queries = data.splitlines()
 
 # Get emails for each search query
+numQueries = len(queries)
+i = 1
 orgEmailsDict = {}
 maxEmails = 0
 for query in queries:
+    print("On query " + str(i) + " out of " + str(numQueries))
     emails = getEmail(query)
     orgEmailsDict[query] = emails
     if len(emails) > maxEmails:
         maxEmails = len(emails)
+    i += 1
 
 # Set up the CSV string header
 csvString = "ORG"
@@ -89,7 +104,8 @@ csvString += "\n"
 
 # Add each query and email to the CSV string
 for org, orgEmails in orgEmailsDict.items():
-    csvString += org # TODO: remove ',' in org
+    orgCleaned = org.replace(',', '')
+    csvString += orgCleaned
     i = 0
     for email in orgEmails:
         csvString += "," + email
