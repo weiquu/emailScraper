@@ -10,6 +10,7 @@ import re
 blacklist = ["tripadvisor.com"]
 
 def getEmail(query):
+    emailsSet = set()
     # TODO: some timeout i guess
 
     # Build the Google search URL
@@ -50,7 +51,11 @@ def getEmail(query):
         for i in mailtos:
             href = i['href']
             if "mailto:" in href:
-                print(href[7:])
+                #print(href[7:])
+                emailsSet.add(href[7:])
+
+    return emailsSet
+        
         
 def notInBlacklist(url):
     for blockedStr in blacklist:
@@ -58,16 +63,28 @@ def notInBlacklist(url):
             return False
     return True
 
-# Define the search queries
-queries = [
-"ESCAPE THEATRE LTD.",
-"AGAM LTD.",
-"ORCHESTRA OF THE MUSIC MAKERS LTD"
-]
+# Get the input file
+input = open("input.txt", "r")
+
+# Read data from the file and close it
+data = input.read()
+input.close()
+
+# Get the search queries
+queries = data.splitlines()
+
+# Set up the CSV string
+csvString = ""
 
 # Get emails for each search query
 for query in queries:
-    getEmail(query)
+    emails = getEmail(query)
+    csvString += query
+    for email in emails:
+        csvString += "," + email
+    csvString += "\n"
+
+print(csvString)
 
 
 
